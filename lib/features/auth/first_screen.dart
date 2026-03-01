@@ -9,9 +9,18 @@ import 'package:ride_karo/features/auth/second_screen.dart';
 ///
 /// Mirrors the Kotlin [FirstScreenActivity] which requests fine location
 /// permission and then routes to [SecondScreen].
-class FirstScreen extends StatelessWidget {
+// PUBLIC_INTERFACE
+class FirstScreen extends StatefulWidget {
   /// Creates the first screen widget.
   const FirstScreen({super.key});
+
+  @override
+  State<FirstScreen> createState() => _FirstScreenState();
+}
+
+class _FirstScreenState extends State<FirstScreen> {
+  /// Whether a permission request is currently in progress.
+  bool _isRequesting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -60,21 +69,30 @@ class FirstScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () => _requestPermissions(context),
+                  onPressed: _isRequesting ? null : _handleAllowPermissions,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryYellow,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
-                  child: const Text(
-                    'Allow Permissions',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
+                  child: _isRequesting
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Text(
+                          'Allow Permissions',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -89,6 +107,7 @@ class FirstScreen extends StatelessWidget {
     );
   }
 
+  /// Builds a single permission description row with an icon and text.
   Widget _buildPermissionItem(IconData icon, String text) {
     return Row(
       children: [
@@ -104,21 +123,55 @@ class FirstScreen extends StatelessWidget {
     );
   }
 
-  void _requestPermissions(BuildContext context) async {
-    // Request location permission
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+  /// Handles the "Allow Permissions" button tap.
+  ///
+  /// Requests location permission via geolocator, then saves the first-run
+  /// flag and navigates to [SecondScreen]. If the permission request fails
+  /// (e.g., on web or emulator), navigation still proceeds to avoid blocking
+  /// the user flow.
+  void _handleAllowPermissions() {
+    // Mark button as in-progress to prevent double taps
+    setState(() {
+      _isRequesting = true;
+    });
+
+    // Perform permission request and navigation in a separate async method.
+    // We capture the NavigatorState before the async gap to avoid using
+    // BuildContext across an async boundary.
+    final NavigatorState navigator = Navigator.of(context);
+    _requestPermissionsAndNavigate(navigator);
+  }
+
+  Future<void> _requestPermissionsAndNavigate(
+    NavigatorState navigator,
+  ) async {
+    // Attempt to request location permission; catch any errors so the
+    // user is never stuck on this screen.
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+    } catch (e) {
+      // Permission request failed (e.g., missing manifest entry, web
+      // platform, or emulator limitations). Log and proceed anyway.
+      debugPrint('Permission request failed: $e');
     }
 
-    // Save that first-run is complete
-    await PreferenceHelper.writeBool(AppConstants.loginCheck, false);
-
-    // Navigate to SecondScreen regardless (matching Kotlin behavior)
-    if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SecondScreen()),
-      );
+    // Save that first-run is complete regardless of permission outcome
+    // (matching Kotlin behavior where navigation always occurs).
+    try {
+      await PreferenceHelper.writeBool(AppConstants.loginCheck, false);
+    } catch (e) {
+      debugPrint('Failed to save preference: $e');
     }
+
+    // Navigate to SecondScreen (the splash/routing screen).
+    // Using the pre-captured NavigatorState avoids BuildContext usage
+    // after async gaps.
+    if (!mounted) return;
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (_) => const SecondScreen()),
+    );
   }
 }
