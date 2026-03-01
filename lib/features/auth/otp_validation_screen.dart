@@ -101,19 +101,23 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Continue button with long-press OTP bypass for debug/testing
+              // Continue button with long-press OTP bypass for debug/testing.
+              //
+              // We use a single GestureDetector with a styled Container instead
+              // of wrapping an ElevatedButton, because ElevatedButton's internal
+              // InkWell gesture recognizer wins the gesture arena and prevents
+              // the parent GestureDetector from ever receiving the long-press.
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: GestureDetector(
+                  onTap: _onContinueWithPhone,
                   onLongPress: _bypassLoginForTesting,
-                  child: ElevatedButton(
-                    onPressed: _onContinueWithPhone,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryYellow,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryYellow,
+                      borderRadius: BorderRadius.circular(25),
                     ),
                     child: const Text(
                       'Continue',

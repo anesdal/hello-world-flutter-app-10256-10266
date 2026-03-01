@@ -95,19 +95,25 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            // Verify button with long-press OTP bypass for debug/testing
+            // Verify button with long-press OTP bypass for debug/testing.
+            //
+            // We use a single GestureDetector with a styled Container instead
+            // of wrapping an ElevatedButton, because ElevatedButton's internal
+            // InkWell gesture recognizer wins the gesture arena and prevents
+            // the parent GestureDetector from ever receiving the long-press.
             SizedBox(
               width: double.infinity,
               height: 50,
               child: GestureDetector(
+                onTap: _isVerifying ? null : _verifyOTP,
                 onLongPress: _isVerifying ? null : _bypassOTPForTesting,
-                child: ElevatedButton(
-                  onPressed: _isVerifying ? null : _verifyOTP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryYellow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _isVerifying
+                        ? AppTheme.primaryYellow.withAlpha(153)
+                        : AppTheme.primaryYellow,
+                    borderRadius: BorderRadius.circular(25),
                   ),
                   child: _isVerifying
                       ? const SizedBox(
