@@ -208,6 +208,32 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 16),
+              // Visible Skip OTP button for testing/preview environments
+              // (e.g. Appetize.io) where long-press and triple-tap gestures
+              // are intercepted by the host browser and never reach Flutter.
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: _bypassLoginForTesting,
+                  icon: const Icon(Icons.skip_next, color: Colors.white),
+                  label: const Text(
+                    'Skip OTP (Testing Only)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
             ],
           ),

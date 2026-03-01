@@ -111,6 +111,32 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
               ),
             ),
             const SizedBox(height: 32),
+            // Visible Skip OTP button for testing/preview environments
+            // (e.g. Appetize.io) where long-press and triple-tap gestures
+            // are intercepted by the host browser and never reach Flutter.
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: _isVerifying ? null : _bypassOTPForTesting,
+                icon: const Icon(Icons.skip_next, color: Colors.white),
+                label: const Text(
+                  'Skip OTP (Testing Only)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Verify button with long-press AND triple-tap OTP bypass for
             // debug/testing.
             //
