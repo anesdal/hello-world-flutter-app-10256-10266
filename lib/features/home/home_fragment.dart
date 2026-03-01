@@ -11,13 +11,13 @@ import 'package:ride_karo/features/home/location_search_sheet.dart';
 import 'package:ride_karo/features/home/bottom_sheet_fragment.dart';
 import 'package:ride_karo/features/home/lets_celebrate_screen.dart';
 
-/// Map-centric home fragment matching the Kotlin [HomeFragment].
+/// Map-centric home fragment matching the original Connected_Living HomeFragment
+/// and the f3.png design screenshot.
 ///
-/// Displays a real Google Map (matching Connected_Living's MapView usage)
-/// with current location, destination markers, route polylines in red,
-/// rider bike markers, and the ride booking bottom sheet flow.
-/// Uses [GoogleMap] widget for proper map tiles with roads/places,
-/// [Geolocator] for location, and [Geocoding] for address resolution.
+/// Shows a full-screen Google Map (real tiles with streets/roads/POIs),
+/// a fixed green location pin overlay at the center, reverse geocoding on
+/// camera idle, pill-shaped white location cards at the bottom, and a dark
+/// "Ride" bar flush to the bottom edge.
 class HomeFragment extends StatefulWidget {
   /// Creates the home fragment widget.
   const HomeFragment({super.key});
@@ -30,9 +30,9 @@ class _HomeFragmentState extends State<HomeFragment> {
   // Google Map controller
   GoogleMapController? _mapController;
 
-  // Location state
-  double _userLat = 19.0760; // Default: Mumbai
-  double _userLng = 72.8777;
+  // Location state — default to Chennai area matching f3.png screenshot
+  double _userLat = 13.0827;
+  double _userLng = 80.2707;
   double _destLat = 0.0;
   double _destLng = 0.0;
   String _currentAddress = 'Locating...';
@@ -51,6 +51,9 @@ class _HomeFragmentState extends State<HomeFragment> {
   Timer? _riderTimer;
   Timer? _journeyTimer;
 
+  // Debounce timer for reverse geocoding on camera idle
+  Timer? _geocodeDebounce;
+
   // Map markers and polylines
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
@@ -68,15 +71,16 @@ class _HomeFragmentState extends State<HomeFragment> {
   void dispose() {
     _riderTimer?.cancel();
     _journeyTimer?.cancel();
+    _geocodeDebounce?.cancel();
     _mapController?.dispose();
     super.dispose();
   }
 
   /// Gets the current user location and reverse geocodes it,
-  /// matching the Kotlin `getCurrentLocation()` method.
+  /// matching the Kotlin getCurrentLocation() method.
   Future<void> _getCurrentLocation() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() {
           _currentAddress = 'Location services disabled';
@@ -113,27 +117,7 @@ class _HomeFragmentState extends State<HomeFragment> {
       _riderLng = _userLng + 0.009;
 
       // Reverse geocode current location
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          final parts = [p.street, p.subLocality, p.locality]
-              .where((s) => s != null && s.isNotEmpty);
-          setState(() {
-            _currentAddress = parts.join(', ');
-            _locationLoaded = true;
-          });
-        }
-      } catch (_) {
-        setState(() {
-          _currentAddress =
-              '${_userLat.toStringAsFixed(4)}, ${_userLng.toStringAsFixed(4)}';
-          _locationLoaded = true;
-        });
-      }
+      await _reverseGeocode(_userLat, _userLng);
 
       // Move camera to current location
       _mapController?.animateCamera(
@@ -150,6 +134,32 @@ class _HomeFragmentState extends State<HomeFragment> {
         _locationLoaded = true;
       });
       _initializeMarkers();
+    }
+  }
+
+  /// Reverse geocodes the given lat/lng to an address string and updates state.
+  Future<void> _reverseGeocode(double lat, double lng) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        final parts = [p.street, p.subLocality, p.locality]
+            .where((s) => s != null && s.isNotEmpty);
+        if (mounted) {
+          setState(() {
+            _currentAddress = parts.join(', ');
+            _locationLoaded = true;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _currentAddress =
+              '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+          _locationLoaded = true;
+        });
+      }
     }
   }
 
@@ -194,23 +204,34 @@ class _HomeFragmentState extends State<HomeFragment> {
 
         return Stack(
           children: [
-            // Real Google Map — matches the MapView in fragment_home.xml
+            // Full-screen Google Map — fills entire viewport behind all overlays
+            // as shown in f3.png. MapType.normal renders real streets/roads/POIs.
             _buildGoogleMap(),
-            // Green center pin overlay — matches the centered green_pin
-            // ImageView in the original layout
+
+            // Green center pin overlay — fixed at screen center with shadow.
+            // Stays fixed while user drags the map underneath.
+            // Matches the centered green_pin ImageView in the original layout.
             if (!_rideInProgress)
-              Center(
+              const Center(
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 32),
+                  padding: EdgeInsets.only(bottom: 32),
                   child: Icon(
                     Icons.location_on,
                     color: AppTheme.greenLight,
                     size: 44,
+                    shadows: [
+                      Shadow(
+                        color: Color(0x28000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            // Location entry cards at bottom — matches
-            // currentLocationEdit and bottomLinearLayout
+
+            // Bottom panel: location cards + dark Ride bar
+            // Anchored to bottom edge as shown in f3.png
             Positioned(
               bottom: 0,
               left: 0,
@@ -252,32 +273,55 @@ class _HomeFragmentState extends State<HomeFragment> {
       zoomControlsEnabled: true,
       mapToolbarEnabled: false,
       compassEnabled: true,
-      // Standard map type shows roads, places, labels — matching original
       mapType: MapType.normal,
-      onCameraIdle: () {
-        // Match the Kotlin onCameraIdle that reverse geocodes camera center
-        _onCameraIdle();
+      onCameraIdle: _onCameraIdle,
+      onCameraMove: (_) {
+        // Cancel any pending geocode while user is still dragging
+        _geocodeDebounce?.cancel();
       },
     );
   }
 
   /// Called when the map camera stops moving. Reverse geocodes the center
-  /// position matching the Kotlin `onCameraIdle()` callback.
-  void _onCameraIdle() async {
-    if (_mapController == null) return;
-    // We don't update address on every camera idle to avoid excessive calls
-    // in the Flutter version, but the capability is here matching the original.
+  /// position matching the Kotlin onCameraIdle() callback that updates
+  /// the current address text as the user drags the map.
+  void _onCameraIdle() {
+    if (_mapController == null || _hasDestination) return;
+
+    // Debounce to avoid excessive geocoding calls
+    _geocodeDebounce?.cancel();
+    _geocodeDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_mapController == null) return;
+      try {
+        // Get the visible region to determine the center point
+        final visibleRegion = await _mapController!.getVisibleRegion();
+        final centerLat = (visibleRegion.northeast.latitude +
+                visibleRegion.southwest.latitude) /
+            2;
+        final centerLng = (visibleRegion.northeast.longitude +
+                visibleRegion.southwest.longitude) /
+            2;
+
+        // Update user position to map center
+        _userLat = centerLat;
+        _userLng = centerLng;
+
+        await _reverseGeocode(centerLat, centerLng);
+      } catch (_) {
+        // Silently handle geocoding failures
+      }
+    });
   }
 
-  /// Builds the bottom panel with location cards and ride booking,
-  /// matching the currentLocationEdit and bottomLinearLayout in the original.
+  /// Builds the bottom panel with location cards and ride bar,
+  /// matching the currentLocationEdit and bottomLinearLayout in f3.png.
+  /// White panel with shadow above, pill-shaped cards, dark Ride bar.
   Widget _buildBottomPanel(RideState rideState) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Location entry cards — matches currentLocationEdit with edittext_bg
+        // White panel container with top shadow
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 0),
           decoration: BoxDecoration(
             color: AppTheme.white,
             boxShadow: [
@@ -291,7 +335,7 @@ class _HomeFragmentState extends State<HomeFragment> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Current location card — matches first CardView with green_circle
+              // Current location card — pill-shaped with green circle
               Container(
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 decoration: BoxDecoration(
@@ -338,7 +382,8 @@ class _HomeFragmentState extends State<HomeFragment> {
                   ),
                 ),
               ),
-              // Destination card — matches second CardView with red_circle
+
+              // Destination card — pill-shaped with red circle
               GestureDetector(
                 onTap: _openLocationSearch,
                 child: Container(
@@ -390,7 +435,8 @@ class _HomeFragmentState extends State<HomeFragment> {
                   ),
                 ),
               ),
-              // Show distance info when destination is set
+
+              // Distance info + Book button when destination is set
               if (_hasDestination && rideState.distance > 0)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -418,26 +464,25 @@ class _HomeFragmentState extends State<HomeFragment> {
             ],
           ),
         ),
-        // Bottom dark bar with bike icon and "Ride" text —
-        // matches bottomLinearLayout with BgDarkGray background
+
+        // Dark bottom bar with bike icon and "Ride" text
+        // Matches bottomLinearLayout with BgDarkGray background in f3.png
         GestureDetector(
           onTap: _hasDestination ? _showRideBottomSheet : null,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
             color: AppTheme.bgDarkGray,
-            child: Column(
+            child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Bike icon — matches the bike drawable ImageView
-                const Icon(
+                Icon(
                   Icons.two_wheeler,
                   color: AppTheme.white,
                   size: 28,
                 ),
-                const SizedBox(height: 2),
-                // "Ride" text — matches yellow "Ride" TextView
-                const Text(
+                SizedBox(height: 2),
+                Text(
                   'Ride',
                   style: TextStyle(
                     fontSize: 13,
@@ -505,7 +550,7 @@ class _HomeFragmentState extends State<HomeFragment> {
 
   /// Called when a destination address is selected.
   /// Adds destination marker and draws a red polyline route on the map,
-  /// matching the Kotlin `getArea()` method behavior.
+  /// matching the Kotlin getArea() method behavior.
   void _onDestinationSelected(String address) async {
     final rideState = Provider.of<RideState>(context, listen: false);
     rideState.setDestinationAddress(address);
@@ -529,7 +574,7 @@ class _HomeFragmentState extends State<HomeFragment> {
             double.parse(distanceKm.toStringAsFixed(1));
         rideState.setDistance(roundedDistance);
 
-        // Add destination marker on map — matching Kotlin mMap!!.addMarker
+        // Add destination marker on map
         _markers.add(
           Marker(
             markerId: const MarkerId('destination'),
@@ -545,8 +590,7 @@ class _HomeFragmentState extends State<HomeFragment> {
           ),
         );
 
-        // Draw red polyline route — matching Kotlin PolylineOptions
-        // with Color.RED and width 8f
+        // Draw red polyline route
         _drawRoutePolyline();
 
         // Animate camera to show both points
@@ -590,14 +634,9 @@ class _HomeFragmentState extends State<HomeFragment> {
   /// Draws a red polyline from user location to destination,
   /// matching the Kotlin ParserTask.onPostExecute that draws
   /// PolylineOptions with Color.RED and width 8f.
-  ///
-  /// Since we don't have the Directions API response for intermediate
-  /// waypoints, we draw a direct polyline between origin and destination.
-  /// This matches the visual indication of the route on the map.
   void _drawRoutePolyline() {
     _polylines.clear();
 
-    // Create intermediate points for a more realistic route appearance
     final List<LatLng> routePoints = _generateRoutePoints(
       LatLng(_userLat, _userLng),
       LatLng(_destLat, _destLng),
@@ -622,17 +661,14 @@ class _HomeFragmentState extends State<HomeFragment> {
     final points = <LatLng>[];
     const numSteps = 20;
 
-    // Calculate a slight offset for mid-point to create a curve
     final midLat = (origin.latitude + dest.latitude) / 2;
     final midLng = (origin.longitude + dest.longitude) / 2;
     final latDiff = (dest.latitude - origin.latitude).abs();
     final lngDiff = (dest.longitude - origin.longitude).abs();
-    // Small perpendicular offset creates a gentle curve
     final offset = max(latDiff, lngDiff) * 0.1;
 
     for (int i = 0; i <= numSteps; i++) {
       final t = i / numSteps;
-      // Quadratic bezier curve through a slightly offset midpoint
       final lat = (1 - t) * (1 - t) * origin.latitude +
           2 * (1 - t) * t * (midLat + offset) +
           t * t * dest.latitude;
@@ -694,10 +730,8 @@ class _HomeFragmentState extends State<HomeFragment> {
         return;
       }
 
-      // Move rider closer — matching Kotlin getRiderClose()
       _riderLng -= 0.001;
 
-      // Update rider marker position on map
       _markers.removeWhere((m) => m.markerId.value == 'rider1');
       _markers.add(
         Marker(
@@ -751,7 +785,6 @@ class _HomeFragmentState extends State<HomeFragment> {
       _journeyLng = _userLng;
     });
 
-    // Calculate steps needed
     final latDiff = (_destLat - _userLat).abs();
     final lngDiff = (_destLng - _userLng).abs();
     final maxDiff = max(latDiff, lngDiff);
@@ -770,7 +803,6 @@ class _HomeFragmentState extends State<HomeFragment> {
       _journeyLat += latStep;
       _journeyLng += lngStep;
 
-      // Update journey marker on map — matching Kotlin journey marker updates
       _markers.removeWhere((m) => m.markerId.value == 'journey');
       _markers.add(
         Marker(
@@ -786,7 +818,6 @@ class _HomeFragmentState extends State<HomeFragment> {
         _rideStatus = 'Journey in progress to $_destinationText';
       });
 
-      // Follow the journey marker
       _mapController?.animateCamera(
         CameraUpdate.newLatLng(LatLng(_journeyLat, _journeyLng)),
       );
@@ -801,16 +832,13 @@ class _HomeFragmentState extends State<HomeFragment> {
       _rideStatus = 'Journey completed! You have arrived.';
     });
 
-    // Reset ride state
     final rideState = Provider.of<RideState>(context, listen: false);
     rideState.reset();
 
-    // Navigate to celebration screen
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const LetsCelebrateScreen()),
     );
 
-    // Reset local state
     setState(() {
       _rideInProgress = false;
       _riderApproaching = false;

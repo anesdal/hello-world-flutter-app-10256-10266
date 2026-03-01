@@ -18,7 +18,7 @@ import 'package:ride_karo/features/drawer/covid19_fragment.dart';
 /// Uses a [Scaffold] with a [Drawer] to host all drawer fragments.
 /// The start destination is [HomeFragment] (map screen).
 /// Toolbar matches `activity_home.xml` — yellow background, elevated,
-/// with yellow-tinted title text.
+/// with yellow-tinted title text (yellow-on-yellow, matching f3.png).
 /// Nav drawer matches `nav_header.xml` with profile icon, name, and email.
 class HomeActivity extends StatefulWidget {
   /// Creates the home activity widget.
@@ -49,7 +49,7 @@ class _HomeActivityState extends State<HomeActivity> {
   late String _displayName;
   late String _displayEmail;
 
-  /// Drawer items matching nav_graph.xml destinations and drawer_menu.xml
+  /// Drawer items matching nav_graph.xml destinations and drawer_menu.xml.
   /// Icons chosen to closely match the original ic_ drawables.
   static const List<_DrawerItem> _drawerItems = [
     _DrawerItem(icon: Icons.home, label: 'Home'),
@@ -78,19 +78,26 @@ class _HomeActivityState extends State<HomeActivity> {
     return Scaffold(
       // AppBar matching my_toolbar in activity_home.xml:
       // yellow background (?attr/colorPrimary), elevation 4dp,
-      // titleTextColor = yellow
+      // titleTextColor = yellow (yellow-on-yellow blends with bg as in f3.png)
       appBar: AppBar(
         title: Text(
           _title,
           style: const TextStyle(
             fontFamily: 'ProductSans',
             fontWeight: FontWeight.bold,
+            fontSize: 20,
             color: AppTheme.primaryYellow,
           ),
         ),
         backgroundColor: AppTheme.primaryYellow,
         foregroundColor: AppTheme.black,
         elevation: 4,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.black45,
+        iconTheme: const IconThemeData(
+          color: AppTheme.black,
+          size: 24,
+        ),
       ),
       drawer: _buildDrawer(),
       body: _buildBody(),
@@ -195,6 +202,7 @@ class _HomeActivityState extends State<HomeActivity> {
     );
   }
 
+  /// Builds the body content based on the selected drawer item.
   Widget _buildBody() {
     switch (_selectedDrawerIndex) {
       case 0:
@@ -222,6 +230,7 @@ class _HomeActivityState extends State<HomeActivity> {
     }
   }
 
+  /// Handles drawer item tap — updates selected index and closes drawer.
   void _onDrawerItemTapped(int index) {
     setState(() {
       _selectedDrawerIndex = index;
@@ -231,8 +240,13 @@ class _HomeActivityState extends State<HomeActivity> {
   }
 }
 
+/// Internal drawer item model.
 class _DrawerItem {
   const _DrawerItem({required this.icon, required this.label});
+
+  /// The icon for the drawer item.
   final IconData icon;
+
+  /// The label text for the drawer item.
   final String label;
 }
