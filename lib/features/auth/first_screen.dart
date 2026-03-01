@@ -7,8 +7,10 @@ import 'package:ride_karo/features/auth/second_screen.dart';
 
 /// First screen shown to new users, requesting location permissions.
 ///
-/// Mirrors the Kotlin [FirstScreenActivity] which requests fine location
-/// permission and then routes to [SecondScreen].
+/// Mirrors the Kotlin [FirstScreenActivity] and its layout
+/// `activity_first_screen.xml` — featuring a bike icon at the top,
+/// bold title "India's Beloved Bike Taxi Service", permission descriptions
+/// with pin/phone icons, and a yellow "Allow Permissions" button.
 // PUBLIC_INTERFACE
 class FirstScreen extends StatefulWidget {
   /// Creates the first screen widget.
@@ -25,56 +27,102 @@ class _FirstScreenState extends State<FirstScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App icon / branding area
-              const Icon(
-                Icons.two_wheeler,
-                size: 120,
-                color: AppTheme.primaryYellow,
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "India's Beloved Bike Taxi Service",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            // Top bike icon area — matches ivRideKaroImage in original layout
+            // The original uses a custom drawable `ic_ride_karo_image` which is
+            // a yellow bike on a golden card-like background.
+            Padding(
+              padding: const EdgeInsets.only(top: 40),
+              child: Center(
+                child: Container(
+                  width: 180,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryYellow,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.two_wheeler,
+                      size: 90,
+                      color: AppTheme.black,
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'To have a comfortable ride experience with RideKaro,\nplease allow us the following permissions',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-                textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            // Title text — matches tvIndia_beloved
+            const Text(
+              "India's Beloved Bike Taxi Service",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'ProductSans',
+                color: AppTheme.black,
               ),
-              const SizedBox(height: 24),
-              // Permission descriptions
-              _buildPermissionItem(
-                Icons.location_on,
-                'Location: To locate you and get rides easily',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            // Subtitle — matches tvComfortable + tvPleaseAllow
+            const Text(
+              'To have a comfortable ride experience with RideKaro,',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'ProductSans',
               ),
-              const SizedBox(height: 12),
-              _buildPermissionItem(
-                Icons.phone,
-                'Phone: To verify your account and secure it',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'please allow us the following permissions',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'ProductSans',
               ),
-              const SizedBox(height: 40),
-              // Allow Permissions button
-              SizedBox(
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 50),
+            // Permission items — matches location and phone LinearLayouts
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  _buildPermissionItem(
+                    Icons.location_on,
+                    Colors.orange,
+                    'Location: To locate you and get rides easily',
+                  ),
+                  const SizedBox(height: 20),
+                  _buildPermissionItem(
+                    Icons.phone,
+                    Colors.green,
+                    'Phone: To verify your account and secure it',
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            // Allow Permissions button — matches btnAllowPermission with
+            // ic_rectangle_button background (yellow rounded rectangle)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 54,
                 child: ElevatedButton(
                   onPressed: _isRequesting ? null : _handleAllowPermissions,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryYellow,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    elevation: 2,
                   ),
                   child: _isRequesting
                       ? const SizedBox(
@@ -88,35 +136,37 @@ class _FirstScreenState extends State<FirstScreen> {
                       : const Text(
                           'Allow Permissions',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            fontFamily: 'ProductSans',
+                            color: AppTheme.black,
                           ),
                         ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Made in India 🇮🇳',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
   }
 
-  /// Builds a single permission description row with an icon and text.
-  Widget _buildPermissionItem(IconData icon, String text) {
+  /// Builds a single permission description row with an icon and text,
+  /// matching the original layout's LinearLayout with icon + TextView.
+  Widget _buildPermissionItem(IconData icon, Color iconColor, String text) {
     return Row(
       children: [
-        Icon(icon, color: AppTheme.accentOrange, size: 24),
+        Icon(icon, color: iconColor, size: 22),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 14),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'ProductSans',
+            ),
           ),
         ),
       ],
@@ -126,18 +176,12 @@ class _FirstScreenState extends State<FirstScreen> {
   /// Handles the "Allow Permissions" button tap.
   ///
   /// Requests location permission via geolocator, then saves the first-run
-  /// flag and navigates to [SecondScreen]. If the permission request fails
-  /// (e.g., on web or emulator), navigation still proceeds to avoid blocking
-  /// the user flow.
+  /// flag and navigates to [SecondScreen].
   void _handleAllowPermissions() {
-    // Mark button as in-progress to prevent double taps
     setState(() {
       _isRequesting = true;
     });
 
-    // Perform permission request and navigation in a separate async method.
-    // We capture the NavigatorState before the async gap to avoid using
-    // BuildContext across an async boundary.
     final NavigatorState navigator = Navigator.of(context);
     _requestPermissionsAndNavigate(navigator);
   }
@@ -145,30 +189,21 @@ class _FirstScreenState extends State<FirstScreen> {
   Future<void> _requestPermissionsAndNavigate(
     NavigatorState navigator,
   ) async {
-    // Attempt to request location permission; catch any errors so the
-    // user is never stuck on this screen.
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
     } catch (e) {
-      // Permission request failed (e.g., missing manifest entry, web
-      // platform, or emulator limitations). Log and proceed anyway.
       debugPrint('Permission request failed: $e');
     }
 
-    // Save that first-run is complete regardless of permission outcome
-    // (matching Kotlin behavior where navigation always occurs).
     try {
       await PreferenceHelper.writeBool(AppConstants.loginCheck, false);
     } catch (e) {
       debugPrint('Failed to save preference: $e');
     }
 
-    // Navigate to SecondScreen (the splash/routing screen).
-    // Using the pre-captured NavigatorState avoids BuildContext usage
-    // after async gaps.
     if (!mounted) return;
     navigator.pushReplacement(
       MaterialPageRoute(builder: (_) => const SecondScreen()),

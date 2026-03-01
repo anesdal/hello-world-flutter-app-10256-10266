@@ -7,14 +7,9 @@ import 'package:ride_karo/features/home/home_activity.dart';
 
 /// OTP code entry screen matching Kotlin [OTPSecondActivity].
 ///
-/// The user enters the OTP code received via SMS and verifies it.
-/// Currently simulates verification (Firebase Auth would be added later).
-///
-/// **Debug bypass**: Long-press OR triple-tap the Continue button to skip OTP
-/// verification and navigate directly to [HomeActivity]. This dual-trigger
-/// approach ensures the bypass works reliably in web previews, emulators
-/// (e.g. Appetize.io), and physical devices where long-press may be
-/// intercepted by the host browser.
+/// Mirrors the layout `activity_otpsecond.xml` — yellow header banner
+/// with "Enter verification pin" title and subtitle, OTP input field,
+/// "Waiting for OTP" text, and dark Continue button with yellow text.
 class OTPSecondScreen extends StatefulWidget {
   /// Creates the OTP second screen.
   const OTPSecondScreen({super.key, required this.mobileNumber});
@@ -36,8 +31,7 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
   /// Timestamp of the last tap, used to reset the counter after a pause.
   DateTime _lastTapTime = DateTime.now();
 
-  /// Whether the bypass navigation has already been triggered, preventing
-  /// duplicate navigations from concurrent gesture callbacks.
+  /// Whether the bypass navigation has already been triggered.
   bool _bypassTriggered = false;
 
   @override
@@ -49,141 +43,161 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Verify OTP'),
-        backgroundColor: AppTheme.primaryYellow,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      backgroundColor: AppTheme.white,
+      body: SafeArea(
+        top: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 20),
-            const Text(
-              'Enter verification pin',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Seat back and relax while we verify your phone number\n+91 ${widget.mobileNumber}',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 32),
-            // OTP input
-            TextField(
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
-                fontSize: 24,
-                letterSpacing: 12,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: '------',
-                counterText: '',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppTheme.primaryYellow,
-                    width: 2,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Waiting for OTP...',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade500,
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Visible Skip OTP button for testing/preview environments
-            // (e.g. Appetize.io) where long-press and triple-tap gestures
-            // are intercepted by the host browser and never reach Flutter.
-            SizedBox(
+            // Yellow header banner — matches rlWelcomeScreen with
+            // ic_rectangle_button background (solid yellow)
+            Container(
               width: double.infinity,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: _isVerifying ? null : _bypassOTPForTesting,
-                icon: const Icon(Icons.skip_next, color: Colors.white),
-                label: const Text(
-                  'Skip OTP (Testing Only)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              height: 180,
+              padding: const EdgeInsets.only(left: 24, right: 24, bottom: 28),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryYellow,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title — matches tvWelcome "Enter verification pin"
+                  const Text(
+                    'Enter verification pin',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'ProductSans',
+                      color: AppTheme.black,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                  const SizedBox(height: 6),
+                  // Subtitle — matches tvWelcomeChoose
+                  Text(
+                    "Hold Tight! Rider is on it's way to your location",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'ProductSans',
+                      color: AppTheme.black,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            // Verify button with long-press AND triple-tap OTP bypass for
-            // debug/testing.
-            //
-            // We use a single GestureDetector with a styled Container instead
-            // of wrapping an ElevatedButton, because ElevatedButton's internal
-            // InkWell gesture recognizer wins the gesture arena and prevents
-            // the parent GestureDetector from ever receiving the long-press.
-            //
-            // HitTestBehavior.opaque ensures that taps landing anywhere in
-            // the bounding box are captured by *this* detector, even in web
-            // preview environments where transparent regions might be ignored.
-            //
-            // The triple-tap fallback exists because Appetize.io and some
-            // browser-based emulators intercept long-press as a context-menu
-            // gesture and never forward it to the Flutter engine.
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _isVerifying ? null : _onContinueTap,
-                onLongPress: _isVerifying ? null : _bypassOTPForTesting,
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _isVerifying
-                        ? AppTheme.primaryYellow.withAlpha(153)
-                        : AppTheme.primaryYellow,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text(
-                          'CONTINUE',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+            // OTP input area
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 60),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    // OTP input — matches otpTextField
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        letterSpacing: 8,
+                        fontFamily: 'ProductSans',
+                      ),
+                      textAlign: TextAlign.center,
+                      decoration: const InputDecoration(
+                        counterText: '',
+                        border: UnderlineInputBorder(),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppTheme.primaryYellow,
+                            width: 2,
                           ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // "Waiting for OTP" text — matches waiting_tv
+                    Text(
+                      'Waiting for OTP',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'ProductSans',
+                        color: AppTheme.gray,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+            // Continue button — matches verifyButton with rect_round_mob
+            // background (dark rounded button with yellow text)
+            Center(
+              child: SizedBox(
+                width: 170,
+                height: 46,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _isVerifying ? null : _onContinueTap,
+                  onLongPress: _isVerifying ? null : _bypassOTPForTesting,
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _isVerifying
+                          ? AppTheme.bgDarkGray.withAlpha(153)
+                          : AppTheme.bgDarkGray,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: _isVerifying
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.mainTheme,
+                            ),
+                          )
+                        : const Text(
+                            'CONTINUE',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'ProductSans',
+                              color: AppTheme.mainTheme,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Visible Skip OTP button for testing/preview environments
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 60),
+              child: SizedBox(
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: _isVerifying ? null : _bypassOTPForTesting,
+                  icon: const Icon(Icons.skip_next, color: Colors.white),
+                  label: const Text(
+                    'Skip OTP (Debug)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'ProductSans',
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -191,13 +205,8 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
   }
 
   /// Handles a single tap on the Continue button.
-  ///
-  /// If three taps arrive within a 1-second window the bypass is triggered
-  /// (triple-tap fallback for environments where long-press is unreliable).
-  /// Otherwise the normal OTP verification flow runs.
   void _onContinueTap() {
     final now = DateTime.now();
-    // Reset tap counter if more than 1 second has elapsed since the last tap.
     if (now.difference(_lastTapTime).inMilliseconds > 1000) {
       _tapCount = 0;
     }
@@ -205,28 +214,18 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
     _tapCount++;
 
     if (_tapCount >= 3) {
-      // Triple-tap detected — activate bypass.
       _tapCount = 0;
       _bypassOTPForTesting();
     } else {
-      // Normal single tap — run standard OTP verification.
       _verifyOTP();
     }
   }
 
-  /// DEBUG/TESTING ONLY: Bypasses OTP verification on long-press (or
-  /// triple-tap) of the Continue button.
-  ///
-  /// Skips the OTP code check and directly saves login state, then navigates
-  /// to [HomeActivity]. Similar to the Connected_Living Kotlin debug
-  /// long-press Continue behavior.
+  /// DEBUG/TESTING ONLY: Bypasses OTP verification.
   void _bypassOTPForTesting() async {
-    // Guard against duplicate triggers from concurrent gesture callbacks.
     if (_bypassTriggered) return;
     _bypassTriggered = true;
 
-    // Capture navigator and messenger *before* any async gap to avoid using
-    // BuildContext across await boundaries.
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -234,7 +233,6 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
       _isVerifying = true;
     });
 
-    // Save login state without actual OTP verification.
     await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
     await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
     await PreferenceHelper.writeString(
@@ -274,10 +272,8 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
       _isVerifying = true;
     });
 
-    // Simulate OTP verification delay
     await Future.delayed(const Duration(seconds: 1));
 
-    // Save login state
     await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
     await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
     await PreferenceHelper.writeString(

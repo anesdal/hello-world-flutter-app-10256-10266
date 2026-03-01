@@ -41,13 +41,18 @@ class RideBottomSheet extends StatelessWidget {
                 children: [
                   const Text(
                     'Distance',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                      fontFamily: 'ProductSans',
+                    ),
                   ),
                   Text(
                     '${distance.toStringAsFixed(1)} KM',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'ProductSans',
                     ),
                   ),
                 ],
@@ -59,13 +64,18 @@ class RideBottomSheet extends StatelessWidget {
                 children: [
                   const Text(
                     'Amount to be paid',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                      fontFamily: 'ProductSans',
+                    ),
                   ),
                   Text(
                     '₹ $fare',
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'ProductSans',
                       color: AppTheme.accentOrange,
                     ),
                   ),
@@ -81,6 +91,7 @@ class RideBottomSheet extends StatelessWidget {
                     'Apply Coupon Code',
                     style: TextStyle(
                       fontSize: 14,
+                      fontFamily: 'ProductSans',
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -106,7 +117,10 @@ class RideBottomSheet extends StatelessWidget {
                       SizedBox(width: 12),
                       Text(
                         'Cash',
-                        style: TextStyle(fontSize: 15),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontFamily: 'ProductSans',
+                        ),
                       ),
                       Spacer(),
                       Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
@@ -132,6 +146,7 @@ class RideBottomSheet extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'ProductSans',
                       color: Colors.black,
                     ),
                   ),

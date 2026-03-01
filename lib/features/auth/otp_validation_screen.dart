@@ -8,10 +8,10 @@ import 'package:ride_karo/features/home/home_activity.dart';
 
 /// Phone number entry and Google Sign-In screen.
 ///
-/// Mirrors the Kotlin [OTPValidation] activity which provides:
-/// - Phone number input with Continue button for OTP flow
-/// - Google Sign-In button for OAuth flow
-/// - Facebook and Apple sign-in buttons (UI only, matching original)
+/// Mirrors the Kotlin [OTPValidation] activity and its layout
+/// `activity_otpvalidation.xml` — featuring a yellow header banner with
+/// "Login or Register", social sign-in buttons (Google, Facebook, Apple),
+/// an OR divider, phone input, and a dark "Continue" button with yellow text.
 class OTPValidationScreen extends StatefulWidget {
   /// Creates the OTP validation screen.
   const OTPValidationScreen({super.key});
@@ -29,8 +29,7 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
   /// Timestamp of the last tap, used to reset the counter after a pause.
   DateTime _lastTapTime = DateTime.now();
 
-  /// Whether the bypass navigation has already been triggered, preventing
-  /// duplicate navigations from concurrent gesture callbacks.
+  /// Whether the bypass navigation has already been triggered.
   bool _bypassTriggered = false;
 
   @override
@@ -42,194 +41,219 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.white,
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 60),
-              // App branding
-              const Icon(
-                Icons.two_wheeler,
-                size: 80,
-                color: AppTheme.primaryYellow,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Login or Register',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Phone number input
+              // Yellow header banner — matches rlWelcomeScreen in original
+              // with ic_rectangle_button background (solid yellow)
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                width: double.infinity,
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 70,
+                  bottom: 28,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
+                decoration: const BoxDecoration(
+                  color: AppTheme.primaryYellow,
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Country code
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 12,
-                      ),
-                      child: const Text(
-                        '🇮🇳 +91',
-                        style: TextStyle(fontSize: 16),
+                    // Title — matches tvWelcome
+                    Text(
+                      'Login or Register',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'ProductSans',
+                        color: AppTheme.black,
                       ),
                     ),
-                    Container(
-                      width: 1,
-                      height: 30,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(width: 8),
-                    // Phone input field
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        maxLength: 10,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: const InputDecoration(
-                          hintText: 'Enter Mobile Number',
-                          border: InputBorder.none,
-                          counterText: '',
-                        ),
+                    SizedBox(height: 6),
+                    // Subtitle (empty in original tvWelcomeChoose, but we keep
+                    // a minimal hint for UX)
+                    Text(
+                      '',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'ProductSans',
+                        color: AppTheme.black,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // Continue button with long-press AND triple-tap OTP bypass for
-              // debug/testing.
-              //
-              // We use a single GestureDetector with a styled Container instead
-              // of wrapping an ElevatedButton, because ElevatedButton's internal
-              // InkWell gesture recognizer wins the gesture arena and prevents
-              // the parent GestureDetector from ever receiving the long-press.
-              //
-              // HitTestBehavior.opaque ensures taps are captured even in
-              // browser-based preview environments.  The triple-tap fallback
-              // exists because Appetize.io intercepts long-press as a context
-              // menu gesture and never forwards it to Flutter.
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _onContinueTap,
-                  onLongPress: _bypassLoginForTesting,
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryYellow,
-                      borderRadius: BorderRadius.circular(25),
+              const SizedBox(height: 4),
+              // Social sign-in buttons — matches signInButton, btnFacebook,
+              // btnPhoneNumber in original layout
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    // Google Sign-In — google_btn_bg background (white with border)
+                    _buildSocialButton(
+                      icon: Icons.g_mobiledata,
+                      label: 'Continue with Google',
+                      bgColor: AppTheme.white,
+                      textColor: AppTheme.black,
+                      borderColor: const Color(0xFFC1C1C1),
+                      onTap: _onGoogleSignIn,
                     ),
-                    child: const Text(
-                      'Continue',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                    const SizedBox(height: 16),
+                    // Facebook — fb_btn_bg background (Facebook blue)
+                    _buildSocialButton(
+                      icon: Icons.facebook,
+                      label: 'Continue with Facebook',
+                      bgColor: AppTheme.facebookBlue,
+                      textColor: AppTheme.white,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Facebook login coming soon'),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Apple — rect_apple_bg background (black)
+                    _buildSocialButton(
+                      icon: Icons.apple,
+                      label: 'Continue with Apple',
+                      bgColor: AppTheme.black,
+                      textColor: AppTheme.white,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Apple login coming soon'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // OR divider — matches tvor
+              Center(
+                child: Text(
+                  'OR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'ProductSans',
+                    color: AppTheme.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Phone number input — matches mobileNumber EditText
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  textAlign: TextAlign.center,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  style: const TextStyle(
+                    fontFamily: 'ProductSans',
+                    fontSize: 16,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter Phone Number',
+                    hintStyle: TextStyle(
+                      fontFamily: 'ProductSans',
+                      color: Colors.grey.shade500,
+                    ),
+                    counterText: '',
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: const UnderlineInputBorder(),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: AppTheme.primaryYellow,
+                        width: 2,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              // OR divider
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('OR', style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              // Continue button — matches button with rect_round_mob background
+              // (dark rounded button with yellow text)
+              Center(
+                child: SizedBox(
+                  width: 170,
+                  height: 46,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _onContinueTap,
+                    onLongPress: _bypassLoginForTesting,
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppTheme.bgDarkGray,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontFamily: 'ProductSans',
+                          color: AppTheme.mainTheme,
+                        ),
+                      ),
+                    ),
                   ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Google Sign-In button
-              _buildSocialButton(
-                icon: Icons.g_mobiledata,
-                label: 'Continue with Google',
-                color: Colors.white,
-                textColor: Colors.black,
-                borderColor: Colors.grey.shade300,
-                onTap: _onGoogleSignIn,
-              ),
-              const SizedBox(height: 12),
-              // Facebook Sign-In button (UI only)
-              _buildSocialButton(
-                icon: Icons.facebook,
-                label: 'Continue with Facebook',
-                color: const Color(0xFF1877F2),
-                textColor: Colors.white,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Facebook login coming soon'),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              // Apple Sign-In button (UI only)
-              _buildSocialButton(
-                icon: Icons.apple,
-                label: 'Continue with Apple',
-                color: Colors.black,
-                textColor: Colors.white,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Apple login coming soon'),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'By continuing you will agree to our terms and\nprivacy policy of Rapido',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
                 ),
-                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              // Visible Skip OTP button for testing/preview environments
-              // (e.g. Appetize.io) where long-press and triple-tap gestures
-              // are intercepted by the host browser and never reach Flutter.
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: ElevatedButton.icon(
-                  onPressed: _bypassLoginForTesting,
-                  icon: const Icon(Icons.skip_next, color: Colors.white),
-                  label: const Text(
-                    'Skip OTP (Testing Only)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+              // Terms text
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'By continuing you will agree to our terms and\nprivacy policy of Rapido',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'ProductSans',
+                    color: Colors.grey.shade600,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Visible Skip OTP button for testing/preview environments
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: _bypassLoginForTesting,
+                    icon: const Icon(Icons.skip_next, color: Colors.white),
+                    label: const Text(
+                      'Skip OTP (Testing Only)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'ProductSans',
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                     ),
                   ),
                 ),
@@ -242,49 +266,46 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
     );
   }
 
+  /// Builds a social sign-in button matching the original app's style.
   Widget _buildSocialButton({
     required IconData icon,
     required String label,
-    required Color color,
+    required Color bgColor,
     required Color textColor,
     Color? borderColor,
     required VoidCallback onTap,
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 48,
       child: OutlinedButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, color: textColor, size: 24),
+        icon: Icon(icon, color: textColor, size: 22),
         label: Text(
           label,
           style: TextStyle(
             color: textColor,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontFamily: 'ProductSans',
           ),
         ),
         style: OutlinedButton.styleFrom(
-          backgroundColor: color,
+          backgroundColor: bgColor,
           side: BorderSide(
             color: borderColor ?? Colors.transparent,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: BorderRadius.circular(8),
           ),
+          padding: const EdgeInsets.symmetric(vertical: 10),
         ),
       ),
     );
   }
 
   /// Handles a single tap on the Continue button.
-  ///
-  /// If three taps arrive within a 1-second window the bypass is triggered
-  /// (triple-tap fallback for environments where long-press is unreliable).
-  /// Otherwise the normal phone-number validation flow runs.
   void _onContinueTap() {
     final now = DateTime.now();
-    // Reset tap counter if more than 1 second has elapsed since the last tap.
     if (now.difference(_lastTapTime).inMilliseconds > 1000) {
       _tapCount = 0;
     }
@@ -292,28 +313,18 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
     _tapCount++;
 
     if (_tapCount >= 3) {
-      // Triple-tap detected — activate bypass.
       _tapCount = 0;
       _bypassLoginForTesting();
     } else {
-      // Normal single tap — run standard phone validation.
       _onContinueWithPhone();
     }
   }
 
-  /// DEBUG/TESTING ONLY: Bypasses phone number + OTP flow on long-press
-  /// (or triple-tap) of the Continue button.
-  ///
-  /// Skips phone validation and OTP entirely, saves login state, and
-  /// navigates directly to [HomeActivity]. Similar to the Connected_Living
-  /// Kotlin debug long-press Continue behavior.
+  /// DEBUG/TESTING ONLY: Bypasses phone number + OTP flow.
   void _bypassLoginForTesting() async {
-    // Guard against duplicate triggers from concurrent gesture callbacks.
     if (_bypassTriggered) return;
     _bypassTriggered = true;
 
-    // Capture navigator and messenger *before* any async gap to avoid using
-    // BuildContext across await boundaries.
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -356,8 +367,6 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
   }
 
   void _onGoogleSignIn() async {
-    // Simulate Google Sign-In (Firebase integration would be added later)
-    // For now, save preferences and navigate to home
     await PreferenceHelper.writeBool(AppConstants.keyLoginWithOAuth, true);
     await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
     await PreferenceHelper.writeString(AppConstants.keyDisplayName, 'User');

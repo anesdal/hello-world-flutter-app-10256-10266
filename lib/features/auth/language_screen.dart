@@ -6,7 +6,8 @@ import 'package:ride_karo/features/auth/otp_validation_screen.dart';
 
 /// Language selection screen matching the Kotlin [LanguageScreenActivity].
 ///
-/// Allows user to choose from English, Hindi, Kannada, Telugu, or Tamil.
+/// Mirrors `activity_language_screen.xml` — allows user to choose from
+/// English, Hindi, Kannada, Telugu, or Tamil.
 /// Persists the selection and navigates to OTP validation.
 class LanguageScreen extends StatefulWidget {
   /// Creates the language screen widget.
@@ -31,6 +32,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -38,23 +40,27 @@ class _LanguageScreenState extends State<LanguageScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
+              // Title — matches "Welcome to Ride Karo"
               const Text(
                 'Welcome to Ride Karo',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  fontFamily: 'ProductSans',
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              // Subtitle — matches "Choose a language to get started"
+              Text(
                 'Choose a language to get started',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  fontFamily: 'ProductSans',
+                  color: Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 32),
-              // Language list
+              // Language list — matches item_layout_language style
               Expanded(
                 child: ListView.builder(
                   itemCount: _languages.length,
@@ -92,6 +98,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                 lang['name']!,
                                 style: TextStyle(
                                   fontSize: 16,
+                                  fontFamily: 'ProductSans',
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -110,7 +117,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   },
                 ),
               ),
-              // Next button
+              // NEXT button — matches ic_rectangle_next style (yellow rounded)
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -119,7 +126,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryYellow,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: const Text(
@@ -127,7 +134,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      fontFamily: 'ProductSans',
+                      color: AppTheme.black,
                     ),
                   ),
                 ),

@@ -17,7 +17,9 @@ import 'package:ride_karo/features/drawer/covid19_fragment.dart';
 ///
 /// Uses a [Scaffold] with a [Drawer] to host all drawer fragments.
 /// The start destination is [HomeFragment] (map screen).
-/// Implements NavigationView.OnNavigationItemSelectedListener equivalent.
+/// Toolbar matches `activity_home.xml` — yellow background, elevated,
+/// with yellow-tinted title text.
+/// Nav drawer matches `nav_header.xml` with profile icon, name, and email.
 class HomeActivity extends StatefulWidget {
   /// Creates the home activity widget.
   const HomeActivity({
@@ -48,6 +50,7 @@ class _HomeActivityState extends State<HomeActivity> {
   late String _displayEmail;
 
   /// Drawer items matching nav_graph.xml destinations and drawer_menu.xml
+  /// Icons chosen to closely match the original ic_ drawables.
   static const List<_DrawerItem> _drawerItems = [
     _DrawerItem(icon: Icons.home, label: 'Home'),
     _DrawerItem(icon: Icons.coronavirus, label: 'COVID 19'),
@@ -73,48 +76,95 @@ class _HomeActivityState extends State<HomeActivity> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar matching my_toolbar in activity_home.xml:
+      // yellow background (?attr/colorPrimary), elevation 4dp,
+      // titleTextColor = yellow
       appBar: AppBar(
-        title: Text(_title),
+        title: Text(
+          _title,
+          style: const TextStyle(
+            fontFamily: 'ProductSans',
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryYellow,
+          ),
+        ),
         backgroundColor: AppTheme.primaryYellow,
-        foregroundColor: Colors.black,
+        foregroundColor: AppTheme.black,
+        elevation: 4,
       ),
       drawer: _buildDrawer(),
       body: _buildBody(),
     );
   }
 
+  /// Builds the navigation drawer matching NavigationView in activity_home.xml
+  /// with nav_header.xml header layout and drawer_menu.xml items.
   Widget _buildDrawer() {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Nav header matching nav_header.xml
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppTheme.primaryYellow,
+          // Nav header matching nav_header.xml — profile picture,
+          // name, and phone/email below
+          Container(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 60,
+              bottom: 16,
             ),
-            accountName: Text(
-              _displayName,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            accountEmail: Text(
-              _displayEmail,
-              style: const TextStyle(color: Colors.black87),
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: widget.userPhoto != null
-                  ? NetworkImage(widget.userPhoto!)
-                  : null,
-              child: widget.userPhoto == null
-                  ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                  : null,
+            color: AppTheme.white,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Circle profile image — matches CircleImageView ivProfile
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.grey.shade200,
+                  backgroundImage: widget.userPhoto != null &&
+                          widget.userPhoto!.isNotEmpty
+                      ? NetworkImage(widget.userPhoto!)
+                      : null,
+                  child: widget.userPhoto == null || widget.userPhoto!.isEmpty
+                      ? Icon(Icons.person,
+                          size: 32, color: Colors.grey.shade500)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                // Name and email/phone — matches tv_user_name & tv_user_email_id
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _displayName.isNotEmpty ? _displayName : 'Rahul Yadav',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'ProductSans',
+                          color: AppTheme.black,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _displayEmail.isNotEmpty
+                            ? _displayEmail
+                            : '+91 9819087614',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'ProductSans',
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          // Drawer menu items
+          const Divider(height: 1),
+          // Drawer menu items — matching drawer_menu.xml with
+          // Style.NavBarView (ProductSans font)
           for (int i = 0; i < _drawerItems.length; i++)
             ListTile(
               leading: Icon(
@@ -122,6 +172,7 @@ class _HomeActivityState extends State<HomeActivity> {
                 color: _selectedDrawerIndex == i
                     ? AppTheme.accentOrange
                     : Colors.grey.shade700,
+                size: 22,
               ),
               title: Text(
                 _drawerItems[i].label,
@@ -129,9 +180,11 @@ class _HomeActivityState extends State<HomeActivity> {
                   fontWeight: _selectedDrawerIndex == i
                       ? FontWeight.bold
                       : FontWeight.normal,
+                  fontFamily: 'ProductSans',
+                  fontSize: 14,
                   color: _selectedDrawerIndex == i
                       ? AppTheme.accentOrange
-                      : Colors.black,
+                      : AppTheme.black,
                 ),
               ),
               selected: _selectedDrawerIndex == i,

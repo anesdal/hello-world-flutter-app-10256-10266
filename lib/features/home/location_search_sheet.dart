@@ -75,6 +75,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              fontFamily: 'ProductSans',
             ),
           ),
           const SizedBox(height: 12),
@@ -86,6 +87,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             onSubmitted: _onSearchSubmitted,
             decoration: InputDecoration(
               hintText: 'Enter Destination',
+              hintStyle: const TextStyle(fontFamily: 'ProductSans'),
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -115,7 +117,10 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                     Icons.location_on_outlined,
                     color: AppTheme.accentOrange,
                   ),
-                  title: Text(_filteredSuggestions[index]),
+                  title: Text(
+                    _filteredSuggestions[index],
+                    style: const TextStyle(fontFamily: 'ProductSans'),
+                  ),
                   onTap: () {
                     widget.onDestinationSelected(_filteredSuggestions[index]);
                     Navigator.of(context).pop();
