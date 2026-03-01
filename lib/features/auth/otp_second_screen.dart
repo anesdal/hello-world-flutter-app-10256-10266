@@ -95,37 +95,77 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            // Verify button
+            // Verify button with long-press OTP bypass for debug/testing
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: ElevatedButton(
-                onPressed: _isVerifying ? null : _verifyOTP,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryYellow,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+              child: GestureDetector(
+                onLongPress: _isVerifying ? null : _bypassOTPForTesting,
+                child: ElevatedButton(
+                  onPressed: _isVerifying ? null : _verifyOTP,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryYellow,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
                   ),
-                ),
-                child: _isVerifying
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                  child: _isVerifying
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// DEBUG/TESTING ONLY: Bypasses OTP verification on long-press of Continue.
+  ///
+  /// Skips the OTP code check and directly saves login state, then navigates
+  /// to [HomeActivity]. Similar to the Connected_Living Kotlin debug
+  /// long-press Continue behavior.
+  void _bypassOTPForTesting() async {
+    setState(() {
+      _isVerifying = true;
+    });
+
+    // Save login state without actual OTP verification
+    await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
+    await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
+    await PreferenceHelper.writeString(
+      AppConstants.keyDisplayName,
+      'Test User (OTP Bypass)',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isVerifying = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('DEBUG: OTP bypass activated'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeActivity()),
+      (route) => false,
     );
   }
 

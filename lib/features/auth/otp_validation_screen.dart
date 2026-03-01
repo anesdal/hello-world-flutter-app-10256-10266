@@ -101,24 +101,27 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Continue button
+              // Continue button with long-press OTP bypass for debug/testing
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
-                  onPressed: _onContinueWithPhone,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryYellow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                child: GestureDetector(
+                  onLongPress: _bypassLoginForTesting,
+                  child: ElevatedButton(
+                    onPressed: _onContinueWithPhone,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryYellow,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ),
@@ -224,6 +227,34 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// DEBUG/TESTING ONLY: Bypasses phone number + OTP flow on long-press.
+  ///
+  /// Skips phone validation and OTP entirely, saves login state, and
+  /// navigates directly to [HomeActivity]. Similar to the Connected_Living
+  /// Kotlin debug long-press Continue behavior.
+  void _bypassLoginForTesting() async {
+    await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
+    await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
+    await PreferenceHelper.writeString(
+      AppConstants.keyDisplayName,
+      'Test User (OTP Bypass)',
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('DEBUG: OTP bypass activated'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeActivity()),
+      (route) => false,
     );
   }
 
