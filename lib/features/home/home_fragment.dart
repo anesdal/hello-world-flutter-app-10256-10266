@@ -89,9 +89,7 @@ class _HomeFragmentState extends State<HomeFragment> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        desiredAccuracy: LocationAccuracy.high,
       );
 
       _userLat = position.latitude;
