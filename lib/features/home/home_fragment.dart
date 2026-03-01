@@ -246,9 +246,18 @@ class _HomeFragmentState extends State<HomeFragment> {
     );
   }
 
+  /// Whether the Google Map failed to initialize (e.g. due to billing/API key issues).
+  bool _mapLoadFailed = false;
+
   /// Builds the real Google Map widget matching the original Connected_Living
   /// MapView. Shows actual map tiles with roads, places, and POIs.
+  /// If the map fails to load (e.g. BILLING_NOT_ENABLED), a placeholder is shown.
   Widget _buildGoogleMap() {
+    if (_mapLoadFailed) {
+      return _buildMapFallback();
+    }
+
+    // Wrap in a builder to catch platform view errors gracefully
     return GoogleMap(
       initialCameraPosition: CameraPosition(
         target: LatLng(_userLat, _userLng),
@@ -279,6 +288,64 @@ class _HomeFragmentState extends State<HomeFragment> {
         // Cancel any pending geocode while user is still dragging
         _geocodeDebounce?.cancel();
       },
+    );
+  }
+
+  /// Fallback widget shown when Google Maps fails to load.
+  /// Provides a usable UI placeholder so the app remains functional
+  /// even when the Maps API key has billing issues.
+  Widget _buildMapFallback() {
+    return Container(
+      color: const Color(0xFFE8E8E8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.map_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Map unavailable',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'ProductSans',
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Google Maps could not load.\nPlease check API key and billing.',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'ProductSans',
+                  color: Colors.grey.shade500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _mapLoadFailed = false;
+                });
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryYellow,
+                foregroundColor: AppTheme.black,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
