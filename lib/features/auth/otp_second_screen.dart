@@ -9,6 +9,12 @@ import 'package:ride_karo/features/home/home_activity.dart';
 ///
 /// The user enters the OTP code received via SMS and verifies it.
 /// Currently simulates verification (Firebase Auth would be added later).
+///
+/// **Debug bypass**: Long-press OR triple-tap the Continue button to skip OTP
+/// verification and navigate directly to [HomeActivity]. This dual-trigger
+/// approach ensures the bypass works reliably in web previews, emulators
+/// (e.g. Appetize.io), and physical devices where long-press may be
+/// intercepted by the host browser.
 class OTPSecondScreen extends StatefulWidget {
   /// Creates the OTP second screen.
   const OTPSecondScreen({super.key, required this.mobileNumber});
@@ -23,6 +29,16 @@ class OTPSecondScreen extends StatefulWidget {
 class _OTPSecondScreenState extends State<OTPSecondScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isVerifying = false;
+
+  /// Tracks rapid consecutive taps for triple-tap bypass detection.
+  int _tapCount = 0;
+
+  /// Timestamp of the last tap, used to reset the counter after a pause.
+  DateTime _lastTapTime = DateTime.now();
+
+  /// Whether the bypass navigation has already been triggered, preventing
+  /// duplicate navigations from concurrent gesture callbacks.
+  bool _bypassTriggered = false;
 
   @override
   void dispose() {
@@ -95,17 +111,27 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            // Verify button with long-press OTP bypass for debug/testing.
+            // Verify button with long-press AND triple-tap OTP bypass for
+            // debug/testing.
             //
             // We use a single GestureDetector with a styled Container instead
             // of wrapping an ElevatedButton, because ElevatedButton's internal
             // InkWell gesture recognizer wins the gesture arena and prevents
             // the parent GestureDetector from ever receiving the long-press.
+            //
+            // HitTestBehavior.opaque ensures that taps landing anywhere in
+            // the bounding box are captured by *this* detector, even in web
+            // preview environments where transparent regions might be ignored.
+            //
+            // The triple-tap fallback exists because Appetize.io and some
+            // browser-based emulators intercept long-press as a context-menu
+            // gesture and never forward it to the Flutter engine.
             SizedBox(
               width: double.infinity,
               height: 50,
               child: GestureDetector(
-                onTap: _isVerifying ? null : _verifyOTP,
+                behavior: HitTestBehavior.opaque,
+                onTap: _isVerifying ? null : _onContinueTap,
                 onLongPress: _isVerifying ? null : _bypassOTPForTesting,
                 child: Container(
                   alignment: Alignment.center,
@@ -122,7 +148,7 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text(
-                          'Continue',
+                          'CONTINUE',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -138,17 +164,51 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
     );
   }
 
-  /// DEBUG/TESTING ONLY: Bypasses OTP verification on long-press of Continue.
+  /// Handles a single tap on the Continue button.
+  ///
+  /// If three taps arrive within a 1-second window the bypass is triggered
+  /// (triple-tap fallback for environments where long-press is unreliable).
+  /// Otherwise the normal OTP verification flow runs.
+  void _onContinueTap() {
+    final now = DateTime.now();
+    // Reset tap counter if more than 1 second has elapsed since the last tap.
+    if (now.difference(_lastTapTime).inMilliseconds > 1000) {
+      _tapCount = 0;
+    }
+    _lastTapTime = now;
+    _tapCount++;
+
+    if (_tapCount >= 3) {
+      // Triple-tap detected — activate bypass.
+      _tapCount = 0;
+      _bypassOTPForTesting();
+    } else {
+      // Normal single tap — run standard OTP verification.
+      _verifyOTP();
+    }
+  }
+
+  /// DEBUG/TESTING ONLY: Bypasses OTP verification on long-press (or
+  /// triple-tap) of the Continue button.
   ///
   /// Skips the OTP code check and directly saves login state, then navigates
   /// to [HomeActivity]. Similar to the Connected_Living Kotlin debug
   /// long-press Continue behavior.
   void _bypassOTPForTesting() async {
+    // Guard against duplicate triggers from concurrent gesture callbacks.
+    if (_bypassTriggered) return;
+    _bypassTriggered = true;
+
+    // Capture navigator and messenger *before* any async gap to avoid using
+    // BuildContext across await boundaries.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     setState(() {
       _isVerifying = true;
     });
 
-    // Save login state without actual OTP verification
+    // Save login state without actual OTP verification.
     await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
     await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
     await PreferenceHelper.writeString(
@@ -162,14 +222,14 @@ class _OTPSecondScreenState extends State<OTPSecondScreen> {
       _isVerifying = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       const SnackBar(
         content: Text('DEBUG: OTP bypass activated'),
         duration: Duration(seconds: 1),
       ),
     );
 
-    Navigator.of(context).pushAndRemoveUntil(
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeActivity()),
       (route) => false,
     );

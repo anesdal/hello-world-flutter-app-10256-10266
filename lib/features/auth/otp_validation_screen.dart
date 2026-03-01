@@ -23,6 +23,16 @@ class OTPValidationScreen extends StatefulWidget {
 class _OTPValidationScreenState extends State<OTPValidationScreen> {
   final TextEditingController _phoneController = TextEditingController();
 
+  /// Tracks rapid consecutive taps for triple-tap bypass detection.
+  int _tapCount = 0;
+
+  /// Timestamp of the last tap, used to reset the counter after a pause.
+  DateTime _lastTapTime = DateTime.now();
+
+  /// Whether the bypass navigation has already been triggered, preventing
+  /// duplicate navigations from concurrent gesture callbacks.
+  bool _bypassTriggered = false;
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -101,17 +111,24 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Continue button with long-press OTP bypass for debug/testing.
+              // Continue button with long-press AND triple-tap OTP bypass for
+              // debug/testing.
               //
               // We use a single GestureDetector with a styled Container instead
               // of wrapping an ElevatedButton, because ElevatedButton's internal
               // InkWell gesture recognizer wins the gesture arena and prevents
               // the parent GestureDetector from ever receiving the long-press.
+              //
+              // HitTestBehavior.opaque ensures taps are captured even in
+              // browser-based preview environments.  The triple-tap fallback
+              // exists because Appetize.io intercepts long-press as a context
+              // menu gesture and never forwards it to Flutter.
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: GestureDetector(
-                  onTap: _onContinueWithPhone,
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _onContinueTap,
                   onLongPress: _bypassLoginForTesting,
                   child: Container(
                     alignment: Alignment.center,
@@ -234,12 +251,46 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
     );
   }
 
-  /// DEBUG/TESTING ONLY: Bypasses phone number + OTP flow on long-press.
+  /// Handles a single tap on the Continue button.
+  ///
+  /// If three taps arrive within a 1-second window the bypass is triggered
+  /// (triple-tap fallback for environments where long-press is unreliable).
+  /// Otherwise the normal phone-number validation flow runs.
+  void _onContinueTap() {
+    final now = DateTime.now();
+    // Reset tap counter if more than 1 second has elapsed since the last tap.
+    if (now.difference(_lastTapTime).inMilliseconds > 1000) {
+      _tapCount = 0;
+    }
+    _lastTapTime = now;
+    _tapCount++;
+
+    if (_tapCount >= 3) {
+      // Triple-tap detected — activate bypass.
+      _tapCount = 0;
+      _bypassLoginForTesting();
+    } else {
+      // Normal single tap — run standard phone validation.
+      _onContinueWithPhone();
+    }
+  }
+
+  /// DEBUG/TESTING ONLY: Bypasses phone number + OTP flow on long-press
+  /// (or triple-tap) of the Continue button.
   ///
   /// Skips phone validation and OTP entirely, saves login state, and
   /// navigates directly to [HomeActivity]. Similar to the Connected_Living
   /// Kotlin debug long-press Continue behavior.
   void _bypassLoginForTesting() async {
+    // Guard against duplicate triggers from concurrent gesture callbacks.
+    if (_bypassTriggered) return;
+    _bypassTriggered = true;
+
+    // Capture navigator and messenger *before* any async gap to avoid using
+    // BuildContext across await boundaries.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     await PreferenceHelper.writeBool(AppConstants.userPhoneLogin, true);
     await PreferenceHelper.writeBool(AppConstants.keyUserLoggedIn, true);
     await PreferenceHelper.writeString(
@@ -249,14 +300,14 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       const SnackBar(
         content: Text('DEBUG: OTP bypass activated'),
         duration: Duration(seconds: 1),
       ),
     );
 
-    Navigator.of(context).pushAndRemoveUntil(
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeActivity()),
       (route) => false,
     );
