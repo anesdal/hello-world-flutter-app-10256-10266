@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+import 'package:ride_karo/shared/app_theme.dart';
+import 'package:ride_karo/shared/constants.dart';
+import 'package:ride_karo/shared/preference_helper.dart';
+import 'package:ride_karo/features/home/home_fragment.dart';
+import 'package:ride_karo/features/drawer/payment_fragment.dart';
+import 'package:ride_karo/features/drawer/my_rides_fragment.dart';
+import 'package:ride_karo/features/drawer/invite_friends_fragment.dart';
+import 'package:ride_karo/features/drawer/power_pass_fragment.dart';
+import 'package:ride_karo/features/drawer/notifications_fragment.dart';
+import 'package:ride_karo/features/drawer/insurance_fragment.dart';
+import 'package:ride_karo/features/drawer/settings_fragment.dart';
+import 'package:ride_karo/features/drawer/support_fragment.dart';
+import 'package:ride_karo/features/drawer/covid19_fragment.dart';
+
+/// Main navigation shell matching the Kotlin [HomeActivity].
+///
+/// Uses a [Scaffold] with a [Drawer] to host all drawer fragments.
+/// The start destination is [HomeFragment] (map screen).
+/// Implements NavigationView.OnNavigationItemSelectedListener equivalent.
+class HomeActivity extends StatefulWidget {
+  /// Creates the home activity widget.
+  const HomeActivity({
+    super.key,
+    this.userName,
+    this.userEmail,
+    this.userPhoto,
+  });
+
+  /// User display name passed from login.
+  final String? userName;
+
+  /// User email passed from login.
+  final String? userEmail;
+
+  /// User photo URL passed from login.
+  final String? userPhoto;
+
+  @override
+  State<HomeActivity> createState() => _HomeActivityState();
+}
+
+class _HomeActivityState extends State<HomeActivity> {
+  int _selectedDrawerIndex = 0;
+  String _title = 'Ride Karo';
+
+  late String _displayName;
+  late String _displayEmail;
+
+  /// Drawer items matching nav_graph.xml destinations and drawer_menu.xml
+  static const List<_DrawerItem> _drawerItems = [
+    _DrawerItem(icon: Icons.home, label: 'Home'),
+    _DrawerItem(icon: Icons.coronavirus, label: 'COVID 19'),
+    _DrawerItem(icon: Icons.payment, label: 'Payment'),
+    _DrawerItem(icon: Icons.two_wheeler, label: 'My Rides'),
+    _DrawerItem(icon: Icons.people, label: 'Invite Friends'),
+    _DrawerItem(icon: Icons.card_membership, label: 'PowerPass'),
+    _DrawerItem(icon: Icons.notifications, label: 'Notifications'),
+    _DrawerItem(icon: Icons.health_and_safety, label: 'Insurance'),
+    _DrawerItem(icon: Icons.settings, label: 'Settings'),
+    _DrawerItem(icon: Icons.support_agent, label: 'Support'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _displayName = widget.userName ??
+        PreferenceHelper.getString(AppConstants.keyDisplayName);
+    _displayEmail = widget.userEmail ??
+        PreferenceHelper.getString(AppConstants.keyUserGoogleGmail);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_title),
+        backgroundColor: AppTheme.primaryYellow,
+        foregroundColor: Colors.black,
+      ),
+      drawer: _buildDrawer(),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // Nav header matching nav_header.xml
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(
+              color: AppTheme.primaryYellow,
+            ),
+            accountName: Text(
+              _displayName,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            accountEmail: Text(
+              _displayEmail,
+              style: const TextStyle(color: Colors.black87),
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: widget.userPhoto != null
+                  ? NetworkImage(widget.userPhoto!)
+                  : null,
+              child: widget.userPhoto == null
+                  ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                  : null,
+            ),
+          ),
+          // Drawer menu items
+          for (int i = 0; i < _drawerItems.length; i++)
+            ListTile(
+              leading: Icon(
+                _drawerItems[i].icon,
+                color: _selectedDrawerIndex == i
+                    ? AppTheme.accentOrange
+                    : Colors.grey.shade700,
+              ),
+              title: Text(
+                _drawerItems[i].label,
+                style: TextStyle(
+                  fontWeight: _selectedDrawerIndex == i
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: _selectedDrawerIndex == i
+                      ? AppTheme.accentOrange
+                      : Colors.black,
+                ),
+              ),
+              selected: _selectedDrawerIndex == i,
+              onTap: () => _onDrawerItemTapped(i),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_selectedDrawerIndex) {
+      case 0:
+        return const HomeFragment();
+      case 1:
+        return const Covid19Fragment();
+      case 2:
+        return const PaymentFragment();
+      case 3:
+        return const MyRidesFragment();
+      case 4:
+        return const InviteFriendsFragment();
+      case 5:
+        return const PowerPassFragment();
+      case 6:
+        return const NotificationsFragment();
+      case 7:
+        return const InsuranceFragment();
+      case 8:
+        return const SettingsFragment();
+      case 9:
+        return const SupportFragment();
+      default:
+        return const HomeFragment();
+    }
+  }
+
+  void _onDrawerItemTapped(int index) {
+    setState(() {
+      _selectedDrawerIndex = index;
+      _title = _drawerItems[index].label;
+    });
+    Navigator.of(context).pop(); // Close drawer
+  }
+}
+
+class _DrawerItem {
+  const _DrawerItem({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+}
