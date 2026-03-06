@@ -1,0 +1,22 @@
+name: anes_iptv
+description: "Lecteur IPTV Pro"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  shared_preferences: ^2.3.2
+  file_picker: ^8.1.2
+  url_launcher: ^6.3.0
+  better_player: ^0.0.84
+  cached_network_image: ^3.3.1
+
+flutter:
+  uses-material-design: true
+
+
