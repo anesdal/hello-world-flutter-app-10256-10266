@@ -1,16 +1,27 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found.")
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    // تعريف الـ namespace ضروري جداً للإصدارات الحديثة
     namespace "com.anes.tv" 
-
-    compileSdkVersion 34 // تحديث لضمان التوافق مع المتطلبات الجديدة
+    compileSdkVersion 34
     
     defaultConfig {
         applicationId "com.anes.tv"
-        minSdkVersion 21 // ضروري لتشغيل مكتبات الفيديو
+        minSdkVersion 21
         targetSdkVersion 34
         versionCode 1
         versionName "1.0.0"
@@ -24,4 +35,8 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
