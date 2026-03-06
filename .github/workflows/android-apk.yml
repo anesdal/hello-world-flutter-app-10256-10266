@@ -1,32 +1,19 @@
 name: Build Android APK
-
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        # أضفنا علامة التجاوز هنا لحل مشكلة تعارض النسخ التي ظهرت لك
-        run: flutter build apk --release --android-skip-build-dependency-validation
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - run: flutter pub get
+      # استخدام العلم أدناه هو الحل الأخير لتجاوز أخطاء Better Player
+      - run: flutter build apk --release --android-skip-build-dependency-validation
+      - uses: actions/upload-artifact@v4
         with:
-          name: AnesTV-Release
+          name: AnesTV-App
           path: build/app/outputs/flutter-apk/app-release.apk
