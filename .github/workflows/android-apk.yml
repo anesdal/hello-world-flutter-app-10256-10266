@@ -11,7 +11,6 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      # استخدام العلم أدناه هو الحل الأخير لتجاوز أخطاء Better Player
       - run: flutter build apk --release --android-skip-build-dependency-validation
       - uses: actions/upload-artifact@v4
         with:
