@@ -1,26 +1,20 @@
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    // حل مشكلة Namespace المفقود
+    // تعريف الـ namespace ضروري جداً للإصدارات الحديثة
     namespace "com.anes.tv" 
+
+    compileSdkVersion 34 // تحديث لضمان التوافق مع المتطلبات الجديدة
     
-    compileSdkVersion flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    defaultConfig {
+        applicationId "com.anes.tv"
+        minSdkVersion 21 // ضروري لتشغيل مكتبات الفيديو
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -30,27 +24,4 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-
-    defaultConfig {
-        applicationId "com.anes.tv" // اسم الحزمة الخاص بمشروع Anes TV
-        minSdkVersion 21 // لضمان تشغيل مكتبة better_player بشكل صحيح
-        targetSdkVersion flutter.targetSdkVersion
-        versionCode flutter.versionCode
-        versionName flutter.versionName
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            // يمكنك إضافة إعدادات التوقيع (Signing) لاحقاً هنا
-        }
-    }
-}
-
-flutter {
-    source '../..'
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-稳定版:$kotlin_version"
 }
