@@ -1,4 +1,9 @@
 pluginManagement {
+    val flutterSdkPath = System.getenv("FLUTTER_ROOT")
+    if (flutterSdkPath != null) {
+        includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+    }
+
     repositories {
         google()
         mavenCentral()
