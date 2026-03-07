@@ -8,10 +8,6 @@ android {
     namespace = "com.anes.tv"
     compileSdk = 34
 
-    sourceSets {
-        getByName("main").java.srcDirs("src/main/kotlin")
-    }
-
     defaultConfig {
         applicationId = "com.anes.tv"
         minSdk = 21
