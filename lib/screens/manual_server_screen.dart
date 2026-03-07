@@ -3,8 +3,10 @@ import '../core/xtream_service.dart';
 import 'xtream_categories_screen.dart';
 
 class ManualServerScreen extends StatefulWidget {
+  const ManualServerScreen({super.key});
+
   @override
-  _ManualServerScreenState createState() => _ManualServerScreenState();
+  State<ManualServerScreen> createState() => _ManualServerScreenState();
 }
 
 class _ManualServerScreenState extends State<ManualServerScreen> {
@@ -19,7 +21,7 @@ class _ManualServerScreenState extends State<ManualServerScreen> {
       _passController.text
     );
     
-    if (data != null) {
+    if (data != null && mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => XtreamCategoriesScreen(host: _hostController.text)),
@@ -30,13 +32,13 @@ class _ManualServerScreenState extends State<ManualServerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Login")),
+      appBar: AppBar(title: const Text("Login")),
       body: Column(
         children: [
-          TextField(controller: _hostController, decoration: InputDecoration(labelText: 'Host')),
-          TextField(controller: _userController, decoration: InputDecoration(labelText: 'User')),
-          TextField(controller: _passController, decoration: InputDecoration(labelText: 'Password')),
-          ElevatedButton(onPressed: _login, child: Text("Login"))
+          TextField(controller: _hostController, decoration: const InputDecoration(labelText: 'Host')),
+          TextField(controller: _userController, decoration: const InputDecoration(labelText: 'User')),
+          TextField(controller: _passController, decoration: const InputDecoration(labelText: 'Password')),
+          ElevatedButton(onPressed: _login, child: const Text("Login"))
         ],
       ),
     );
