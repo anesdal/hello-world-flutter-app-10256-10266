@@ -1,5 +1,5 @@
 name: anes_tv
-description: A new Flutter project for IPTV.
+description: IPTV Player Application
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -24,4 +24,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # إذا كان لديك أيقونات أو صور أضفها هنا تحت assets:
