@@ -1,5 +1,6 @@
-package com.froyo.ridekaro.ride_karo
+package com.froyo.ridekaro
 
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity : FlutterActivity()
+class MainActivity: FlutterActivity() {
+}
