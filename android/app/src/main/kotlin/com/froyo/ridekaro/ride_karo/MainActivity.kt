@@ -1,4 +1,4 @@
-package com.froyo.ridekaro
+package com.froyo.ridekaro.ride_karo
 
 import io.flutter.embedding.android.FlutterActivity
 
